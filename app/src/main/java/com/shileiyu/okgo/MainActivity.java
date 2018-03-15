@@ -12,6 +12,7 @@ import com.lzy.okgo.callback.Callback;
 import com.lzy.okgo.model.Progress;
 import com.lzy.okgo.model.Response;
 import com.lzy.okgo.request.GetRequest;
+import com.lzy.okgo.request.PostRequest;
 import com.lzy.okgo.request.base.Request;
 
 import butterknife.BindView;
@@ -49,7 +50,7 @@ public class MainActivity extends AppCompatActivity {
 
                     @Override
                     public void onSuccess(HttpResponse<Data> data) {
-                        String text = "请求成功=" + toJson(data);
+                        String text = "请求成功=" + JsonUtil.toJson(data);
                         mTv.setText(text);
                     }
 
@@ -60,24 +61,33 @@ public class MainActivity extends AppCompatActivity {
                 });
     }
 
+    /**
+     * 网络层
+     */
     public static class NetWork {
+        /**
+         * Get请求
+         */
         public static <T> void get(String url, final BizCallBack<T> bizCallBack) {
             final GetRequest<T> request = OkGo.get(url);
-            request.execute(new BaseCallBack<T>(bizCallBack) {
-                @Override
-                public void onSuccess(Response<T> response) {
-                    bizCallBack.onSuccess(response.body());
-                }
+            request.execute(new BaseCallBack<T>(bizCallBack));
 
-                @Override
-                public void onError(Response<T> response) {
-                    bizCallBack.onFail(response.code(), response.message());
-                }
-            });
+        }
 
+        /**
+         * Post 请求
+         */
+        public static <T> void post(String url, BizCallBack<T> bizCallBack) {
+            PostRequest<T> post = OkGo.post(url);
+            post.upJson(JsonUtil.toJson(new Data())).execute(new BaseCallBack<T>(bizCallBack));
         }
     }
 
+    /**
+     * 业务层回调
+     *
+     * @param <T>
+     */
     public abstract static class BizCallBack<T> extends TypeToken<T> {
 
         public abstract void onSuccess(T data);
@@ -86,7 +96,12 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
-    public abstract static class BaseCallBack<T> implements Callback<T> {
+    /**
+     * 网络层回调
+     *
+     * @param <T>
+     */
+    public static class BaseCallBack<T> implements Callback<T> {
         final BizCallBack<T> real;
 
         public BaseCallBack(BizCallBack<T> back) {
@@ -99,8 +114,18 @@ public class MainActivity extends AppCompatActivity {
         }
 
         @Override
+        public void onSuccess(Response<T> response) {
+            real.onSuccess(response.body());
+        }
+
+        @Override
         public void onCacheSuccess(Response<T> response) {
 
+        }
+
+        @Override
+        public void onError(Response<T> response) {
+            real.onFail(response.code(), response.message());
         }
 
         @Override
@@ -128,9 +153,4 @@ public class MainActivity extends AppCompatActivity {
             return null;
         }
     }
-
-    public static String toJson(Object obj) {
-        return new Gson().toJson(obj);
-    }
-
 }
