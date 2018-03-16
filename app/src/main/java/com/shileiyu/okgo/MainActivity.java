@@ -18,6 +18,7 @@ import com.lzy.okgo.request.base.Request;
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
+import okhttp3.ResponseBody;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -77,9 +78,9 @@ public class MainActivity extends AppCompatActivity {
         /**
          * Post 请求
          */
-        public static <T> void post(String url, BizCallBack<T> bizCallBack) {
+        public static <T> void post(String url, BizCallBack<T> bizCallBack, Object data) {
             PostRequest<T> post = OkGo.post(url);
-            post.upJson(JsonUtil.toJson(new Data())).execute(new BaseCallBack<T>(bizCallBack));
+            post.upJson(JsonUtil.toJson(data)).execute(new BaseCallBack<T>(bizCallBack));
         }
     }
 
@@ -143,12 +144,16 @@ public class MainActivity extends AppCompatActivity {
 
         }
 
+        @SuppressWarnings("unchecked")
         @Override
         public T convertResponse(okhttp3.Response response) throws Throwable {
             if (response.isSuccessful()) {
-                String string = response.body().string();
-                Object o = new Gson().fromJson(string, real.getType());
-                return (T) o;
+                ResponseBody body = response.body();
+                if (body != null) {
+                    String string = body.string();
+                    Object o = new Gson().fromJson(string, real.getType());
+                    return (T) o;
+                }
             }
             return null;
         }
